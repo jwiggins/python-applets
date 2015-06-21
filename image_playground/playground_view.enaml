@@ -1,12 +1,15 @@
+from enaml.core.api import Include
 from enaml.layout.api import align, hbox, spacer, vbox
 from enaml.stdlib.fields import FloatField
 from enaml.widgets.api import (
-    Action, Container, ComboBox, EnableCanvas, Field, Form, Include,
-    Label, MenuBar, Menu, PushButton, Slider, TraitsItem, Window
+    Action, Container, ComboBox, Field, Form, Label, MenuBar, Menu, PushButton,
+    Slider, Window
 )
 
 from enable.api import ComponentEditor
 from pyface.api import FileDialog, OK
+from traits_enaml.widgets.enable_canvas import EnableCanvas
+from traits_enaml.widgets.traits_view import TraitsView
 from traitsui.api import CodeEditor, InstanceEditor, View, UItem
 
 from data_model import ImageCollection
@@ -90,8 +93,7 @@ enamldef AddInput(Container):
             model.add_algorithm_input(_var_name, _low_bound, _upper_bound)
 
 
-enamldef Main(Window):
-    id: window
+enamldef Main(Window): window:
     attr model: ImageCollection = ImageCollection()
 
     title='Image Processing Playground'
@@ -129,7 +131,7 @@ enamldef Main(Window):
             align('top', code_editor, image_display),
         ]
 
-        TraitsItem: code_editor:
+        TraitsView: code_editor:
             model := window.model
             view = editor_view
             hug_height = 'strong'
