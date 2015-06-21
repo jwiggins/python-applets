@@ -1,0 +1,5 @@
+*.py[c|d]
+*~
+.DS_Store
+
+__enamlcache__

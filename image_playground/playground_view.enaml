@@ -1,0 +1,152 @@
+from enaml.layout.api import align, hbox, spacer, vbox
+from enaml.stdlib.fields import FloatField
+from enaml.widgets.api import (
+    Action, Container, ComboBox, EnableCanvas, Field, Form, Include,
+    Label, MenuBar, Menu, PushButton, Slider, TraitsItem, Window
+)
+
+from enable.api import ComponentEditor
+from pyface.api import FileDialog, OK
+from traitsui.api import CodeEditor, InstanceEditor, View, UItem
+
+from data_model import ImageCollection
+from image_view import ImageView
+
+
+def _get_image_view(image_list):
+    if len(image_list) > 0:
+        return ImageView(image=image_list[0])
+    return None
+
+def _open_image(model):
+    dlg = FileDialog(
+            default_path=model.filename,
+            message='Select the image:',
+            action='open',
+        )
+    if dlg.open() == OK:
+        model.filename = dlg.path
+
+def _save_algorithm_script(model):
+    algorithm = model.algorithm
+    dlg = FileDialog(
+        default_path=algorithm.code_file,
+        action='save as',
+        message='Save the algorithm:',
+    )
+    if dlg.open() == OK:
+        path = dlg.path
+        with open(path, "w") as fp:
+            fp.write(algorithm.code_source)
+        algorithm.code_file = path
+
+
+editor_view = View(
+    UItem('object.algorithm.code_source',
+          editor=CodeEditor(),
+    ),
+    width=675,
+)
+
+image_view = View(
+    UItem('object.plot',
+          editor=ComponentEditor(),
+          resizable=True,
+    ),
+)
+
+
+enamldef AddInput(Container):
+    attr model
+    attr _var_name = ''
+    attr _low_bound = 0.0
+    attr _upper_bound = 0.0
+
+    constraints = [
+        vbox(
+            hbox(name_lbl, low_lbl, upper_lbl),
+            hbox(name_fld, low_fld, upper_fld, add_input),
+        ),
+        align('h_center', name_lbl, name_fld),
+        align('h_center', low_lbl, low_fld),
+        align('h_center', upper_lbl, upper_fld),
+    ]
+
+    Label: name_lbl:
+        text = 'Variable Name:'
+    Label: low_lbl:
+        text = 'Lower Bound:'
+    Label: upper_lbl:
+        text = 'Upper Bound:'
+    Field: name_fld:
+        text := _var_name
+    FloatField: low_fld:
+        value := _low_bound
+    FloatField: upper_fld:
+        value := _upper_bound
+    PushButton: add_input:
+        text = 'Add Script Input'
+        clicked ::
+            model.add_algorithm_input(_var_name, _low_bound, _upper_bound)
+
+
+enamldef Main(Window):
+    id: window
+    attr model: ImageCollection = ImageCollection()
+
+    title='Image Processing Playground'
+
+    MenuBar:
+        Menu:
+            title = '&File'
+            Action:
+                text = 'Open Image\tCtrl+O'
+                triggered :: _open_image(window.model)
+        Menu:
+            title = '&Process'
+            Action:
+                text = 'Recompute\tCtrl+R'
+                triggered :: print 'Recompute triggered'
+
+    Container:
+        constraints = [
+            hbox(
+                vbox(
+                    image_display,
+                    selected_image,
+                    add_input,
+                ),
+                vbox(
+                    code_editor,
+                    code_file,
+                    hbox(
+                        spacer,
+                        save_script,
+                        recompute,
+                    ),
+                ),
+            ),
+            align('top', code_editor, image_display),
+        ]
+
+        TraitsItem: code_editor:
+            model := window.model
+            view = editor_view
+            hug_height = 'strong'
+        EnableCanvas: image_display:
+            component << _get_image_view(window.model.display_images)
+        Field: code_file:
+            text := window.model.algorithm.code_file
+        ComboBox: selected_image:
+            items << window.model.image_names
+            selected_item >> window.model.selected_image
+            index = 0
+        AddInput: add_input:
+            model << window.model
+        PushButton: save_script:
+            text = 'Save Script...'
+            clicked :: _save_algorithm_script(window.model)
+        PushButton: recompute:
+            text = 'Recompute'
+            clicked :: window.model.run_algorithm()
+

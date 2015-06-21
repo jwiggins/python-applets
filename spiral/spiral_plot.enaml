@@ -1,0 +1,91 @@
+from range import Range
+
+
+enamldef SpiralSaveDialog(FileDialog):
+    attr model
+    title = "Save"
+    type = "save"
+    closed ::
+        if self.result == 'accepted':
+            model.save(self.path)
+
+
+enamldef SpiralWindow(MainWindow):
+    title = 'Spiral'
+    Container:
+        constraints = [
+            hbox(spiral, vbox(form, _space_)),
+            align('left', num_shapes.slider, num_cycles.slider,
+                  max_radius.slider, min_count.slider, max_count.slider,
+                  start_scale.slider, end_scale.slider),
+            align('right', num_shapes.slider, num_cycles.slider,
+                  max_radius.slider, min_count.slider, max_count.slider,
+                  start_scale.slider, end_scale.slider),
+            spiral.width >= 500,
+            spiral.height >= 500,
+        ]
+        SpiralCanvas:
+            id: spiral
+            padding = 10
+        GroupBox: form:
+            Label:
+                text = "Quantity:"
+            Range: num_shapes:
+                minimum = 10.0
+                maximum = 200.0
+                value := spiral.num_shapes
+            Label:
+                text = "Cycle Count:"
+            Range: num_cycles:
+                minimum = 1.0
+                maximum = 10.0
+                value := spiral.num_cycles
+            Label:
+                text = "Maximum Radius:"
+            Range: max_radius:
+                minimum = 3.0
+                maximum = 15.0
+                value := spiral.max_radius
+            Label:
+                text = "Minimum Line Count:"
+            Range: min_count:
+                minimum = 1.0
+                maximum = 15.0
+                value := spiral.min_count
+            Label:
+                text = "Maximum Line Count:"
+            Range: max_count:
+                minimum = 1.0
+                maximum = 15.0
+                value := spiral.max_count
+            Label:
+                text = "Start Scale:"
+            Range: start_scale:
+                minimum = 1.0
+                maximum = 4.0
+                value := spiral.start_scale
+            Label:
+                text = "End Scale:"
+            Range: end_scale:
+                minimum = 1.0
+                maximum = 4.0
+                value := spiral.end_scale
+            Form:
+                Label:
+                    text = 'Inverted:'
+                CheckBox: inverted:
+                    checked := spiral.inverted
+                Label:
+                    text = 'Wireframe:'
+                CheckBox: no_fill:
+                    checked := spiral.no_fill
+                Label:
+                    text = "Shape:"
+                ComboBox: shape:
+                    items = spiral.component.shape_choices
+                    value := spiral.shape
+            PushButton: save:
+                text = "Save"
+                clicked ::
+                    sdlg = SpiralSaveDialog(model=spiral)
+                    sdlg.show()

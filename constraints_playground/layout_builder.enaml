@@ -1,0 +1,158 @@
+from enaml.layout.api import align, hbox, spacer, vbox
+from enaml.stdlib.fields import FloatField
+from enaml.widgets.api import (
+    Container, ComboBox, EnableCanvas, Field, Form, Label, PushButton,
+    TraitsItem, Window
+)
+
+from traits.api import Property
+from traitsui.api import CodeEditor, ListStrEditor, UItem, View
+
+from layout_canvas import LayoutCanvas
+
+
+editor_view = View(
+    UItem('object.constraints_def',
+          editor=CodeEditor(),
+    ),
+    width=675,
+    height=300,
+    resizable=True,
+)
+
+
+box_list_view = View(
+    UItem('object.box_names',
+          editor=ListStrEditor(
+                        title='Boxes',
+                        editable=False,
+                    ),
+    ),
+    width=200,
+    height=300,
+    resizable=True,
+)
+
+
+def _create_close_handler(win):
+    """  Creates a callback function that clears the main window's canvas_win
+    attribute.
+    """
+    def closer():
+        win.canvas_win = None
+    return closer
+
+
+enamldef CanvasWindow(Window): canvas:
+    attr model
+    attr close_handler
+
+    initial_size = (512, 512)
+    title = 'Layout Canvas'
+
+    closed :: close_handler()
+
+    Container:
+        EnableCanvas:
+            component << canvas.model
+
+
+enamldef AddBoxForm(Form):
+    id: frm
+    attr _name: unicode = u''
+    attr _width: float = 0.0
+    attr _height: float = 0.0
+    attr _hug_width: unicode = u'ignore'
+    attr _hug_height: unicode = u'ignore'
+    attr _resist_width: unicode = u'ignore'
+    attr _resist_height: unicode = u'ignore'
+
+    Label: name_lbl:
+        text = 'Box Name:'
+    Field: name_fld:
+        text := frm._name
+
+    Label: width_lbl:
+        text = 'Width Hint:'
+    FloatField: width_fld:
+        value := frm._width
+
+    Label: height_lbl:
+        text = 'Height Hint:'
+    FloatField: height_fld:
+        value := frm._height
+
+    Label: hug_width_lbl:
+        text = 'Hug Width:'
+    HugResistCombo:
+        selected_item >> frm._hug_width
+
+    Label: hug_height_lbl:
+        text = 'Hug Height:'
+    HugResistCombo:
+        selected_item >> frm._hug_height
+
+    Label: resist_width_lbl:
+        text = 'Resist Width:'
+    HugResistCombo:
+        selected_item >> frm._resist_width
+
+    Label: resist_height_lbl:
+        text = 'Resist Height:'
+    HugResistCombo:
+        selected_item >> frm._resist_height
+
+
+enamldef HugResistCombo(ComboBox):
+    items = ['ignore', 'weak', 'medium', 'strong', 'required']
+    index = 0
+
+
+enamldef Main(Window): main:
+    attr model: LayoutCanvas = LayoutCanvas()
+    attr canvas_win = None
+
+    title = 'Constraints Builder'
+
+    Container:
+        constraints = [
+            hbox(
+                vbox(
+                    box_list,
+                    add_box,
+                    add_button,
+                    spacer,
+                    show,
+                ),
+                constraints_editor,
+            ),
+            add_box.width <= 250,
+        ]
+
+        AddBoxForm:
+            id: add_box
+        PushButton: add_button:
+            text = 'Add Box'
+            clicked ::
+                name = str(add_box._name)
+                size_hint = (add_box._width, add_box._height)
+                hugs_and_resists = {'hug_width': add_box._hug_width,
+                                    'hug_height': add_box._hug_height,
+                                    'resist_width': add_box._resist_width,
+                                    'resist_height': add_box._resist_height}
+                main.model.add_box(name, size_hint, **hugs_and_resists)
+        TraitsItem: constraints_editor:
+            model := main.model
+            view = editor_view
+        TraitsItem: box_list:
+            model := main.model
+            view = box_list_view
+
+        PushButton: show:
+            text = 'Show Canvas'
+            clicked ::
+                if main.canvas_win is None:
+                    closer = _create_close_handler(main)
+                    main.canvas_win = CanvasWindow(model=main.model,
+                                                   close_handler=closer)
+                session.add_window(main.canvas_win)
