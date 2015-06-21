@@ -1,12 +1,13 @@
 from enaml.layout.api import align, hbox, spacer, vbox
 from enaml.stdlib.fields import FloatField
 from enaml.widgets.api import (
-    Container, ComboBox, EnableCanvas, Field, Form, Label, PushButton,
-    TraitsItem, Window
+    Container, ComboBox, Field, Form, Label, MainWindow, PushButton, Window
 )
 
 from traits.api import Property
 from traitsui.api import CodeEditor, ListStrEditor, UItem, View
+from traits_enaml.widgets.enable_canvas import EnableCanvas
+from traits_enaml.widgets.traits_view import TraitsView
 
 from layout_canvas import LayoutCanvas
 
@@ -57,8 +58,12 @@ enamldef CanvasWindow(Window): canvas:
             component << canvas.model
 
 
-enamldef AddBoxForm(Form):
-    id: frm
+enamldef HugResistCombo(ComboBox):
+    items = ['ignore', 'weak', 'medium', 'strong', 'required']
+    index = 0
+
+
+enamldef AddBoxForm(Form): frm:
     attr _name: unicode = u''
     attr _width: float = 0.0
     attr _height: float = 0.0
@@ -103,12 +108,7 @@ enamldef AddBoxForm(Form):
         selected_item >> frm._resist_height
 
 
-enamldef HugResistCombo(ComboBox):
-    items = ['ignore', 'weak', 'medium', 'strong', 'required']
-    index = 0
-
-
-enamldef Main(Window): main:
+enamldef Main(MainWindow): main:
     attr model: LayoutCanvas = LayoutCanvas()
     attr canvas_win = None
 
@@ -129,8 +129,8 @@ enamldef Main(Window): main:
             add_box.width <= 250,
         ]
 
-        AddBoxForm:
-            id: add_box
+        AddBoxForm: add_box:
+            pass
         PushButton: add_button:
             text = 'Add Box'
             clicked ::
@@ -141,10 +141,10 @@ enamldef Main(Window): main:
                                     'resist_width': add_box._resist_width,
                                     'resist_height': add_box._resist_height}
                 main.model.add_box(name, size_hint, **hugs_and_resists)
-        TraitsItem: constraints_editor:
+        TraitsView: constraints_editor:
             model := main.model
             view = editor_view
-        TraitsItem: box_list:
+        TraitsView: box_list:
             model := main.model
             view = box_list_view
 
