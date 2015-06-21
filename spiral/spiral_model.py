@@ -2,10 +2,8 @@ import numpy as np
 
 from enable.api import Component
 from enable.kiva_graphics_context import GraphicsContext
-from enaml.components.enable_canvas import EnableCanvas
-from enaml.core.toolkit import Toolkit
-from traits.api import (Bool, DelegatesTo, Float, Instance, on_trait_change,
-                        Trait)
+from traits.api import (Bool, DelegatesTo, Float, HasStrictTraits, Instance,
+                        Trait, on_trait_change)
 
 COLORS = ((1.0, 1.0, 1.0, 1.0), (0.0, 0.0, 0.0, 1.0))
 
@@ -97,15 +95,8 @@ class SpiralComponent(Component):
             self.shape_(gc, colors, x, y, r, t, int(n)*2, self.no_fill)
 
 
-class SpiralCanvas(EnableCanvas):
-    """ An Enaml widget that encapsulates a SpiralComponent.
-
-    """
-
+class SpiralModel(HasStrictTraits):
     component = Instance(Component)
-
-    def _component_default(self):
-        return SpiralComponent()
 
     #: Delegates.
     padding = DelegatesTo('component')
@@ -120,14 +111,13 @@ class SpiralCanvas(EnableCanvas):
     no_fill = DelegatesTo('component')
     shape = DelegatesTo('component')
 
-    @classmethod
-    def activate(cls):
-        """ Add this component to the active toolkit.
+    def _component_default(self):
+        return SpiralComponent()
 
-        """
-        tk = Toolkit.active_toolkit()
-        cons = tk['EnableCanvas'].clone(shell_loader=lambda: cls)
-        tk[cls.__name__] = cons
+    @on_trait_change('num_shapes,num_cycles,max_radius,min_count,max_count'
+                     ',start_scale,end_scale,inverted,no_fill,shape')
+    def _redraw(self):
+        self.component.request_redraw()
 
     def save(self, path):
         """ Save the contents of the component to a file.
@@ -137,11 +127,3 @@ class SpiralCanvas(EnableCanvas):
         gc = GraphicsContext(size)
         self.component.draw(gc)
         gc.save(path)
-
-    def _setup_init_widgets(self):
-        super(SpiralCanvas, self)._setup_init_widgets()
-
-    @on_trait_change('num_shapes,num_cycles,max_radius,min_count,max_count'
-                     ',start_scale,end_scale,inverted,no_fill,shape')
-    def _redraw(self):
-        self.component.request_redraw()

@@ -1,20 +1,21 @@
+from enaml.layout.api import align, hbox, vbox, spacer
+from enaml.widgets.api import (
+    CheckBox, Container, ComboBox, FileDialogEx, Form, GroupBox, Label,
+    MainWindow, PushButton
+)
+from traits_enaml.widgets.enable_canvas import EnableCanvas
+
 from range import Range
 
 
-enamldef SpiralSaveDialog(FileDialog):
+enamldef SpiralWindow(MainWindow): window:
     attr model
-    title = "Save"
-    type = "save"
-    closed ::
-        if self.result == 'accepted':
-            model.save(self.path)
 
-
-enamldef SpiralWindow(MainWindow):
     title = 'Spiral'
+
     Container:
         constraints = [
-            hbox(spiral, vbox(form, _space_)),
+            hbox(spiral, vbox(form, spacer)),
             align('left', num_shapes.slider, num_cycles.slider,
                   max_radius.slider, min_count.slider, max_count.slider,
                   start_scale.slider, end_scale.slider),
@@ -24,68 +25,70 @@ enamldef SpiralWindow(MainWindow):
             spiral.width >= 500,
             spiral.height >= 500,
         ]
-        SpiralCanvas:
-            id: spiral
-            padding = 10
+        EnableCanvas: spiral:
+            component << model.component
+
         GroupBox: form:
             Label:
                 text = "Quantity:"
             Range: num_shapes:
                 minimum = 10.0
                 maximum = 200.0
-                value := spiral.num_shapes
+                value := model.num_shapes
             Label:
                 text = "Cycle Count:"
             Range: num_cycles:
                 minimum = 1.0
                 maximum = 10.0
-                value := spiral.num_cycles
+                value := model.num_cycles
             Label:
                 text = "Maximum Radius:"
             Range: max_radius:
                 minimum = 3.0
                 maximum = 15.0
-                value := spiral.max_radius
+                value := model.max_radius
             Label:
                 text = "Minimum Line Count:"
             Range: min_count:
                 minimum = 1.0
                 maximum = 15.0
-                value := spiral.min_count
+                value := model.min_count
             Label:
                 text = "Maximum Line Count:"
             Range: max_count:
                 minimum = 1.0
                 maximum = 15.0
-                value := spiral.max_count
+                value := model.max_count
             Label:
                 text = "Start Scale:"
             Range: start_scale:
                 minimum = 1.0
                 maximum = 4.0
-                value := spiral.start_scale
+                value := model.start_scale
             Label:
                 text = "End Scale:"
             Range: end_scale:
                 minimum = 1.0
                 maximum = 4.0
-                value := spiral.end_scale
+                value := model.end_scale
             Form:
                 Label:
                     text = 'Inverted:'
                 CheckBox: inverted:
-                    checked := spiral.inverted
+                    checked := model.inverted
                 Label:
                     text = 'Wireframe:'
                 CheckBox: no_fill:
-                    checked := spiral.no_fill
+                    checked := model.no_fill
                 Label:
                     text = "Shape:"
                 ComboBox: shape:
-                    items = spiral.component.shape_choices
-                    value := spiral.shape
+                    items = model.component.shape_choices
+                    index = 0
+                    selected_item >> model.shape
             PushButton: save:
                 text = "Save"
                 clicked ::
-                    sdlg = SpiralSaveDialog(model=spiral)
-                    sdlg.show()
+                    path = FileDialogEx.get_save_file_name(window)
+                    if path:
+                        model.save(path)
