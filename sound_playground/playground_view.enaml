@@ -1,0 +1,44 @@
+from enaml.layout.api import align, hbox, spacer, vbox
+from enaml.widgets.api import (
+    Action, Container, FileDialogEx, MenuBar, Menu, PushButton, Window
+)
+from traits_enaml.widgets.enable_canvas import EnableCanvas
+
+from sound_model import SoundModel
+
+
+enamldef Main(Window): window:
+    attr model = SoundModel()
+
+    title='Sound Processing Playground'
+
+    MenuBar:
+        Menu:
+            title = '&File'
+            Action:
+                text = 'Open Image\tCtrl+O'
+                triggered ::
+                    path = FileDialogEx.get_open_file_name(window)
+                    if path:
+                        model.filename = path
+
+    Container:
+        constraints = [
+            vbox(
+                img,
+                hbox(
+                    spacer,
+                    play,
+                ),
+            ),
+            img.width >= 255,
+            img.height >= 255,
+        ]
+
+        EnableCanvas: img:
+            component << model.image_view
+
+        PushButton: play:
+            text = 'Play'
+            clicked :: model.play_sound()
+
