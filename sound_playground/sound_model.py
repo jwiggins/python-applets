@@ -4,7 +4,8 @@ from PIL import Image
 from pyaudio import PyAudio
 from skimage import img_as_float
 
-from traits.api import HasStrictTraits, File, Instance
+from traits.api import (HasStrictTraits, Array, Bool, File, Instance, Int,
+                        on_trait_change)
 
 from image_view import ImageView
 
@@ -38,9 +39,13 @@ class SoundModel(HasStrictTraits):
 
     image_view = Instance(ImageView)
 
-    audio_lib = Instance(PyAudio, args=())
+    created_sound = Array()
 
-    # traits handlers
+    _audio_lib = Instance(PyAudio, args=())
+
+    transpose_image = Bool(False)
+
+    sample_rate = Int(22050)
 
     def _image_view_default(self):
         image = np.zeros((255, 255), dtype=np.uint8)
@@ -51,11 +56,19 @@ class SoundModel(HasStrictTraits):
             self.image_view.image = _load_image(new)
             self.image_view.request_redraw()
 
+    @on_trait_change('image_view:image,transpose_image,sample_rate')
+    def _clear_sound(self):
+        self.created_sound = np.ndarray(shape=(0,))
+
     def play_sound(self):
-        sound = _spec(self.image_view.image)
-        sound =  lr.util.normalize(sound)
-        stream = self.audio_lib.open(format=1, channels=1, rate=11025,
-                                     output=True)
-        stream.write(sound)
+        if len(self.created_sound) == 0:
+            img = self.image_view.image
+            sound = _spec(img.T if self.transpose_image else img)
+            self.created_sound = lr.util.normalize(sound)
+
+        stream = self._audio_lib.open(
+            format=1, channels=1, rate=self.sample_rate, output=True
+        )
+        stream.write(self.created_sound)
         stream.stop_stream()
         stream.close()
