@@ -31,8 +31,8 @@ enamldef Main(Window): window:
                     play,
                 ),
             ),
-            img.width >= 255,
-            img.height >= 255,
+            img.width >= 512,
+            img.height >= 512,
         ]
 
         EnableCanvas: img:
