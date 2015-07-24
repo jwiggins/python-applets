@@ -3,11 +3,14 @@ import numpy as np
 from PIL import Image
 from pyaudio import PyAudio
 from skimage import img_as_float
+from skimage.color import rgb2gray
 
 from traits.api import (HasStrictTraits, Array, Bool, File, Instance, Int,
                         on_trait_change)
 
 from image_view import ImageView
+
+IMAGE_SIZE = (512, 512)
 
 
 def _is_data_file(filename):
@@ -23,8 +26,11 @@ def _is_data_file(filename):
 
 def _load_image(filename):
     img = Image.open(filename)
-    img.draft("L", (512, 512))
-    return np.array(img)
+    img.draft('L', IMAGE_SIZE)
+    arr = np.array(img)
+    if arr.ndim == 3:
+        return rgb2gray(arr)
+    return arr
 
 
 def _spec(image):
@@ -48,15 +54,16 @@ class SoundModel(HasStrictTraits):
     sample_rate = Int(22050)
 
     def _image_view_default(self):
-        image = np.zeros((255, 255), dtype=np.uint8)
+        image = np.zeros(IMAGE_SIZE, dtype=np.uint8)
         return ImageView(image=image)
 
     def _filename_changed(self, new):
         if _is_data_file(new):
             self.image_view.image = _load_image(new)
             self.image_view.request_redraw()
+            self._clear_sound()
 
-    @on_trait_change('image_view:image,transpose_image,sample_rate')
+    @on_trait_change('transpose_image,sample_rate')
     def _clear_sound(self):
         self.created_sound = np.ndarray(shape=(0,))
 

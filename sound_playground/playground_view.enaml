@@ -10,8 +10,8 @@ from sound_model import SoundModel
 SAMPLE_RATES = [44100, 32000, 22050, 11025, 8000]
 
 
-enamldef Main(Window): window:
-    attr model = SoundModel()
+enamldef PlaygroundWindow(Window): window:
+    attr model : SoundModel
 
     title='Sound Processing Playground'
 
